@@ -164,7 +164,25 @@ app.post('/complete-service', express.json(), async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+// Add this endpoint
+app.post('/api/notify', express.json(), (req, res) => {
+    // Verify auth token
+    if (req.headers.authorization !== `Bearer ${process.env.SOCKET_SECRET}`) {
+        return res.status(401).send('Unauthorized');
+    }
 
+    const { driverId, event, ...data } = req.body;
+    const driverSocket = driverConnections.get(driverId.toString());
+
+    if (driverSocket) {
+        io.to(driverSocket.socketId).emit(event, data);
+        console.log(`[NOTIFY] Sent ${event} to driver ${driverId}`);
+        res.send({ success: true });
+    } else {
+        console.log(`[NOTIFY] Driver ${driverId} not connected`);
+        res.status(404).send('Driver not connected');
+    }
+});
 // Start server
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {

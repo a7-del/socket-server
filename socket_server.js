@@ -1,34 +1,44 @@
 // socket_server.js
 const express = require('express');
+const fs = require('fs');
+const https = require('https');
 const app = express();
-const http = require('http').createServer(app);
 require('dotenv').config();
 
 const { Server } = require('socket.io');
-const io = new Server(http, {
-cors: {
-  origin: [
-    "https://fuel.injibara.com", // ✅ This is critical
-    "http://fuel.injibara.com",
-    "http://localhost:3000"
-  ],
-  methods: ["GET", "POST"]
-}
+const { Pool } = require('pg');
 
+// Load SSL certs (adjust path based on where certbot put them)
+const options = {
+  key: fs.readFileSync('/etc/letsencrypt/live/fuel.injibara.com/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/fuel.injibara.com/fullchain.pem')
+};
+
+// Use HTTPS server
+const httpsServer = https.createServer(options, app);
+
+// Initialize Socket.IO on HTTPS
+const io = new Server(httpsServer, {
+  cors: {
+    origin: [
+      "https://fuel.injibara.com",
+      "http://fuel.injibara.com",
+      "http://localhost:3000"
+    ],
+    methods: ["GET", "POST"]
+  }
 });
 
-const { Pool } = require('pg');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const STATION_INTERVAL_MS = 1000;
 const activeStations = new Set();
-const driverSocketMap = new Map(); // New: driver_id => socket.id
-const socketDriverMap = new Map(); // New: socket.id => driver_id
+const driverSocketMap = new Map();
+const socketDriverMap = new Map();
 
 io.on('connection', (socket) => {
   console.log(`🔌 Client connected: ${socket.id}`);
 
-  // ✅ Join station + register driver
   socket.on('join_monitor', async ({ station_id, driver_id }) => {
     socket.join(`station_${station_id}`);
     activeStations.add(station_id);
@@ -40,10 +50,8 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ✅ Clean up on disconnect
   socket.on('disconnect', () => {
     console.log(`❌ Client disconnected: ${socket.id}`);
-
     const driverId = socketDriverMap.get(socket.id);
     if (driverId) {
       driverSocketMap.delete(driverId);
@@ -53,7 +61,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// ✅ Efficient update loop for all active stations
 setInterval(async () => {
   try {
     for (const stationId of activeStations) {
@@ -76,9 +83,8 @@ setInterval(async () => {
   } catch (err) {
     console.error('❗ Interval error:', err);
   }
-}, STATION_INTERVAL_MS);
+});
 
-// ✅ Targeted PHP Notification Endpoint
 app.get('/notify', (req, res) => {
   const driverId = parseInt(req.query.id);
   if (!driverId) return res.status(400).send('❌ Missing driver ID');
@@ -92,8 +98,8 @@ app.get('/notify', (req, res) => {
   res.status(404).send(`❌ Driver ID ${driverId} not connected`);
 });
 
-// ✅ Start server
+// ✅ Use port 3000 or 443
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-  console.log(`✅ Socket.IO server running at http://localhost:${PORT}`);
+httpsServer.listen(PORT, () => {
+  console.log(`✅ Socket.IO server running securely at https://fuel.injibara.com:${PORT}`);
 });

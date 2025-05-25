@@ -6,10 +6,15 @@ require('dotenv').config();
 
 const { Server } = require('socket.io');
 const io = new Server(http, {
-  cors: {
-origin: ["https://fuel.injibara.com", "http://fuel.injibara.com", "http://localhost:3000"]
-    methods: ["GET", "POST"]
-  }
+cors: {
+  origin: [
+    "https://fuel.injibara.com", // ✅ This is critical
+    "http://fuel.injibara.com",
+    "http://localhost:3000"
+  ],
+  methods: ["GET", "POST"]
+}
+
 });
 
 const { Pool } = require('pg');

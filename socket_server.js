@@ -88,7 +88,7 @@ app.get('/notify', (req, res) => {
 });
 
 // ✅ Start server
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
   console.log(`✅ Socket.IO server running at http://localhost:${PORT}`);
 });

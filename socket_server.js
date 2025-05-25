@@ -7,7 +7,7 @@ require('dotenv').config();
 const { Server } = require('socket.io');
 const io = new Server(http, {
   cors: {
-    origin: "*",
+origin: ["https://fuel.injibara.com", "http://fuel.injibara.com", "http://localhost:3000"]
     methods: ["GET", "POST"]
   }
 });
@@ -15,7 +15,7 @@ const io = new Server(http, {
 const { Pool } = require('pg');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const STATION_INTERVAL_MS = 3000;
+const STATION_INTERVAL_MS = 1000;
 const activeStations = new Set();
 const driverSocketMap = new Map(); // New: driver_id => socket.id
 const socketDriverMap = new Map(); // New: socket.id => driver_id

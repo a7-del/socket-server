@@ -22,8 +22,7 @@ const io = new Server(httpsServer, {
   cors: {
     origin: [
       "https://fuel.injibara.com",
-      "http://fuel.injibara.com",
-      "http://localhost:3000"
+      "http://fuel.injibara.com"
     ],
     methods: ["GET", "POST"]
   }

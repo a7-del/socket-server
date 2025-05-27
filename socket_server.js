@@ -94,7 +94,10 @@ app.get('/notify', (req, res) => {
 
   res.status(404).send(`❌ Driver ID ${driverId} not connected`);
 });
-
+// Add this route for testing root
+app.get('/', (req, res) => {
+  res.send('✅ Fuel Queue Socket Server is running!');
+});
 // Start the server
 server.listen(PORT, () => {
   console.log(`✅ Socket.IO server running on port ${PORT}`);
